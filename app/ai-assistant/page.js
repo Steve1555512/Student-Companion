@@ -10,15 +10,19 @@ You CAN:
 - Answer ANY educational question across ALL academic subjects including:
   mathematics, science, physics, chemistry, biology, history, geography, literature, 
   programming, computer science, economics, law, medicine, engineering, languages, 
-  philosophy, psychology, sociology, art, music, and more
+  philosophy, psychology, sociology, art, music, political science, civics,
+  current affairs, general knowledge, and more
+- Answer factual questions about real people, countries, governments, leaders, 
+  capitals, populations, and world events
 - Explain concepts clearly with examples, analogies, and step-by-step breakdowns
 - Help with homework, exam prep, essays, and research
 - Analyze uploaded notes and generate study questions
 - Answer follow-up questions and have academic discussions
 
 You CANNOT:
-- Answer non-educational requests like jokes, recipes, sports gossip, celebrity news, 
-  entertainment, personal advice unrelated to academics, or casual small talk beyond greetings
+- Answer non-educational requests like jokes, recipes, celebrity gossip, 
+  entertainment reviews, personal advice unrelated to academics, or casual small talk beyond greetings
+- Give personal opinions on controversial political topics or tell someone who to vote for
 - If asked something non-educational, respond with: 
   "That's outside my academic scope! I'm here to help you learn. Ask me any educational question and I'll do my best to explain it clearly. 😊"
 
@@ -26,7 +30,8 @@ Personality:
 - Be friendly, encouraging, and enthusiastic about learning
 - Give detailed, well-structured answers with examples where helpful
 - Use bullet points, numbered lists, or headers to organize complex answers
-- Celebrate curiosity and make learning enjoyable`;
+- Celebrate curiosity and make learning enjoyable
+- Keep responses concise and fast — avoid unnecessarily long answers`;
 
 async function askGemini(question) {
   const keyRes = await fetch('/api/chat');
@@ -38,22 +43,26 @@ async function askGemini(question) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: SYSTEM_INSTRUCTION }]
-        },
-        contents: [{ role: 'user', parts: [{ text: question }] }]
+        system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+        contents: [{ role: 'user', parts: [{ text: question }] }],
+        generationConfig: {
+          maxOutputTokens: 800,
+          temperature: 0.7,
+        }
       })
     }
   );
 
   const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (text) return text;
+  if (data.promptFeedback?.blockReason) return "I can only answer educational questions. Please ask me something academic.";
+  return "Sorry, I couldn't generate a response. Please rephrase your question.";
 }
+  
 
 export default function AIAssistant() {
-  const [messages, setMessages] = useState([
-    { role: "ai", content: "Hello! I am your AI Academic Assistant powered by Google Gemini.\n\nI can answer academic questions from any subject.\n\nWhat would you like to learn today?" }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [file, setFile] = useState(null);
@@ -235,9 +244,9 @@ export default function AIAssistant() {
         </div>
 
         {/* Footer */}
-        <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-center">
-          <p className="text-green-300 text-sm">🤖 Powered by Google Gemini AI - Academic questions only</p>
-        </div>
+        <div className="mt-4 p-2 text-center">
+  <p className="text-gray-600 text-xs">Academic AI Assistant • Powered by Google</p>
+</div>
       </div>
     </div>
   );

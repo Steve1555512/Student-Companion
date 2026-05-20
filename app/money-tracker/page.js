@@ -416,7 +416,7 @@ export default function MoneyTracker() {
         )}
 
         <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-center">
-          <p className="text-green-300 text-sm">💾 Data saved locally • 🐷 ₦500 auto-saved daily</p>
+          <p className="text-green-300 text-sm"> Data saved locally • 🐷 ₦500 auto-saved daily</p>
         </div>
       </div>
     </div>

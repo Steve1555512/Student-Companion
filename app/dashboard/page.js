@@ -3,15 +3,56 @@ import { useEffect, useState } from "react";
 import Sidebar from "../../components/Sidebar";
 
 export default function Dashboard() {
-  const [greeting, setGreeting] = useState("");
+ const [greeting, setGreeting] = useState("");
+const [userName, setUserName] = useState("");
+const [stats, setStats] = useState({
+  activeCourses: 0,
+  assignmentsDue: 0,
+  studyHours: 0,
+  moneySaved: 0
+});
 
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting("Good Morning");
-    else if (hour < 17) setGreeting("Good Afternoon");
-    else setGreeting("Good Evening");
-  }, []);
+useEffect(() => {
+  const hour = new Date().getHours();
+  if (hour < 12) setGreeting("Good Morning");
+  else if (hour < 17) setGreeting("Good Afternoon");
+  else setGreeting("Good Evening");
 
+  // Get user name
+  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
+  if (currentUser.name) setUserName(currentUser.name.split(" ")[0]);
+
+  // Active courses — from timetable
+  const courses = JSON.parse(localStorage.getItem("timetable_courses") || "[]");
+  const uniqueCourses = [...new Set(courses.map(c => c.name))];
+
+  // Assignments due — pending only
+  const assignments = JSON.parse(localStorage.getItem("timetable_assignments") || "[]");
+  const pendingAssignments = assignments.filter(a => !a.submitted && new Date(`${a.dueDate}T${a.dueTime}`) > new Date());
+
+  // Study hours — count completed study sessions (each session = 1-3 hrs avg)
+  const studySessions = JSON.parse(localStorage.getItem("timetable_study") || "[]");
+  const completedSessions = studySessions.filter(s => s.completed);
+  const totalStudyHours = completedSessions.reduce((sum, s) => {
+    const start = s.startTime.split(":").map(Number);
+    const end = s.endTime.split(":").map(Number);
+    const hours = (end[0] * 60 + end[1] - (start[0] * 60 + start[1])) / 60;
+    return sum + hours;
+  }, 0);
+
+  // Money saved — from savings transactions
+  const transactions = JSON.parse(localStorage.getItem("money_tracker") || "[]");
+  const totalSaved = transactions
+    .filter(t => t.type === "savings")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  setStats({
+    activeCourses: uniqueCourses.length,
+    assignmentsDue: pendingAssignments.length,
+    studyHours: Math.round(totalStudyHours),
+    moneySaved: totalSaved
+  });
+}, []);
   const goToPage = (page) => {
     window.location.href = page;
   };
@@ -52,33 +93,33 @@ export default function Dashboard() {
       <div className="ml-64 p-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">{greeting}, Student! 👋</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">{greeting}, {userName || "Student"}!!! </h1>
           <p className="text-gray-300">Welcome to your Academic Dashboard</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 text-center hover:scale-105 transition">
-            <span className="text-3xl">📚</span>
-            <h3 className="text-2xl font-bold text-white mt-2">5</h3>
-            <p className="text-gray-300">Active Courses</p>
-          </div>
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 text-center hover:scale-105 transition">
-            <span className="text-3xl">📝</span>
-            <h3 className="text-2xl font-bold text-white mt-2">3</h3>
-            <p className="text-gray-300">Assignments Due</p>
-          </div>
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 text-center hover:scale-105 transition">
-            <span className="text-3xl">⏰</span>
-            <h3 className="text-2xl font-bold text-white mt-2">24</h3>
-            <p className="text-gray-300">Study Hours</p>
-          </div>
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 text-center hover:scale-105 transition">
-            <span className="text-3xl">💰</span>
-            <h3 className="text-2xl font-bold text-white mt-2">₦12,500</h3>
-            <p className="text-gray-300">Money Saved</p>
-          </div>
-        </div>
+<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 text-center hover:scale-105 transition">
+    <span className="text-3xl">📚</span>
+    <h3 className="text-2xl font-bold text-white mt-2">{stats.activeCourses}</h3>
+    <p className="text-gray-300">Active Courses</p>
+  </div>
+  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 text-center hover:scale-105 transition">
+    <span className="text-3xl">📝</span>
+    <h3 className="text-2xl font-bold text-white mt-2">{stats.assignmentsDue}</h3>
+    <p className="text-gray-300">Assignments Due</p>
+  </div>
+  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 text-center hover:scale-105 transition">
+    <span className="text-3xl">⏰</span>
+    <h3 className="text-2xl font-bold text-white mt-2">{stats.studyHours}</h3>
+    <p className="text-gray-300">Study Hours</p>
+  </div>
+  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 text-center hover:scale-105 transition">
+    <span className="text-3xl">💰</span>
+    <h3 className="text-2xl font-bold text-white mt-2">₦{stats.moneySaved.toLocaleString()}</h3>
+    <p className="text-gray-300">Money Saved</p>
+  </div>
+</div>
 
         {/* Quick Actions - 3 Big Cards */}
         <h2 className="text-2xl font-bold text-white mb-4">Quick Actions</h2>

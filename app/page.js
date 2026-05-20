@@ -44,22 +44,64 @@ export default function LoginPage() {
     }
   };
 
-  const verifyFace = () => {
-    if (!cameraActive) {
-      toast.error("Camera not ready. Please allow camera access.");
-      return;
+  const verifyFace = async () => {
+  if (!cameraActive) return toast.error("Camera not ready");
+  if (!email) return toast.error("Enter your email first!");
+
+  const users = JSON.parse(localStorage.getItem("users") || "[]");
+  const user = users.find(u => u.email === email);
+  if (!user) return toast.error("Email not found. Please sign up first!");
+  if (!user.faceImage) return toast.error("No face registered. Use email login.");
+
+  setIsLoading(true);
+
+  // Capture current face
+  const canvas = document.createElement("canvas");
+  const video = videoRef.current;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+
+  // Compare pixel similarity
+  const savedImg = new Image();
+  savedImg.src = user.faceImage;
+  savedImg.onload = () => {
+    const savedCanvas = document.createElement("canvas");
+    savedCanvas.width = 50;
+    savedCanvas.height = 50;
+    const sCtx = savedCanvas.getContext("2d");
+    sCtx.drawImage(savedImg, 0, 0, 50, 50);
+
+    const currentCanvas = document.createElement("canvas");
+    currentCanvas.width = 50;
+    currentCanvas.height = 50;
+    const cCtx = currentCanvas.getContext("2d");
+    cCtx.drawImage(canvas, 0, 0, 50, 50);
+
+    const saved = sCtx.getImageData(0, 0, 50, 50).data;
+    const current = cCtx.getImageData(0, 0, 50, 50).data;
+
+    let diff = 0;
+    for (let i = 0; i < saved.length; i += 4) {
+      diff += Math.abs(saved[i] - current[i]);
+      diff += Math.abs(saved[i+1] - current[i+1]);
+      diff += Math.abs(saved[i+2] - current[i+2]);
     }
-    
-    setIsLoading(true);
-    setTimeout(() => {
+    const similarity = 1 - diff / (saved.length * 255);
+
+    if (similarity > 0.7) {
+      localStorage.setItem("currentUser", JSON.stringify({ name: user.name, email: user.email }));
       setIsFaceVerified(true);
-      toast.success("Face verified successfully!");
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1500);
-      setIsLoading(false);
-    }, 2000);
+      toast.success(`Welcome back, ${user.name}! ✅`);
+      setTimeout(() => { window.location.href = "/dashboard"; }, 1500);
+    } else {
+      toast.error("Face doesn't match! Try email login instead.");
+    }
+    setIsLoading(false);
   };
+};
 
  const handleEmailLogin = (e) => {
   e.preventDefault();
