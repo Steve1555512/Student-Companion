@@ -22,23 +22,24 @@ export default function SignupPage() {
   }, []);
 
   const startCamera = async () => {
-    try {
-      // Stop any existing stream first
-      if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(t => t.stop());
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play();
-          setCameraActive(true);
-        };
-      }
-    } catch {
-      toast.error("Please allow camera access");
+  try {
+    if (videoRef.current?.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(t => t.stop());
     }
-  };
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      video: { facingMode: "user", width: 640, height: 480 } // specific size loads faster
+    });
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current.play();
+        setCameraActive(true);
+      };
+    }
+  } catch {
+    toast.error("Please allow camera access");
+  }
+};
 
   const stopCamera = () => {
     if (videoRef.current?.srcObject) {
@@ -62,12 +63,12 @@ export default function SignupPage() {
     toast.success("Face captured! ✅");
   };
 
-  const handleRetake = () => {
-    setFaceCaptured(false);
-    setFaceImage(null);
-    setCameraActive(false);
-    setTimeout(() => startCamera(), 300);
-  };
+ const handleRetake = () => {
+  setFaceCaptured(false);
+  setFaceImage(null);
+  setCameraActive(false);
+  startCamera(); // start immediately, no delay
+};
 
   const handleSignup = () => {
     if (!name || !email || !password) return toast.error("Please fill all fields");
