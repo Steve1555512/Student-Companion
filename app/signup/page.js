@@ -42,19 +42,22 @@ export default function SignupPage() {
     }
   };
 
-  const captureFace = () => {
-    if (!cameraActive) return toast.error("Camera not ready");
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-    const imageData = canvas.toDataURL("image/jpeg", 0.5);
-    setFaceImage(imageData);
-    setFaceCaptured(true);
-    toast.success("Face captured! ✅");
+ const captureFace = () => {
+  if (!cameraActive) return toast.error("Camera not ready");
+  const canvas = canvasRef.current;
+  const video = videoRef.current;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d");
+  // Draw without mirror flip so image saves correctly
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const imageData = canvas.toDataURL("image/jpeg", 0.8);
+  setFaceImage(imageData);
+  setFaceCaptured(true);
+  // Stop camera after capture
+  stopCamera();
+  toast.success("Face captured! ");
+};
   };
 
   const handleSignup = () => {
@@ -137,17 +140,27 @@ export default function SignupPage() {
               <p className="text-gray-400 text-xs mb-3">This will be used to verify you during login</p>
 
               {faceCaptured ? (
-                <div>
-                  <img src={faceImage} alt="captured face"
-                    className="w-full h-48 object-cover rounded-xl border-2 border-green-500 mb-3" />
-                  <div className="p-3 bg-green-500/20 border border-green-500 rounded-lg text-center mb-3">
-                    <p className="text-green-300 text-sm">✅ Face captured!</p>
-                  </div>
-                  <button onClick={() => setFaceCaptured(false)}
-                    className="w-full py-2 bg-white/10 text-gray-300 rounded-lg text-sm">
-                    Retake Photo
-                  </button>
-                </div>
+  <div>
+    {faceImage ? (
+      <img src={faceImage} alt="captured face"
+        className="w-full h-48 object-cover rounded-xl border-2 border-green-500 mb-3" />
+    ) : (
+      <div className="w-full h-48 rounded-xl border-2 border-green-500 mb-3 bg-green-500/10 flex items-center justify-center">
+        <p className="text-green-300 text-sm">📸 Photo saved in memory</p>
+      </div>
+    )}
+    <div className="p-3 bg-green-500/20 border border-green-500 rounded-lg text-center mb-3">
+      <p className="text-green-300 text-sm">✅ Face captured! Ready to sign up.</p>
+    </div>
+    <button onClick={() => {
+      setFaceCaptured(false);
+      setFaceImage(null);
+      setTimeout(() => startCamera(), 300);
+    }}
+      className="w-full py-2 bg-white/10 text-gray-300 rounded-lg text-sm hover:bg-white/20 transition">
+      🔄 Retake Photo
+    </button>
+  </div>
               ) : (
                 <div>
                   <div className="rounded-xl overflow-hidden border-2 border-white/20 mb-3">
@@ -166,4 +179,3 @@ export default function SignupPage() {
       </div>
     </div>
   );
-}
